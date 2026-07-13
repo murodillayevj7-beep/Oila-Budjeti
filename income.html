@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Daromadlar - Oila Byudjeti</title>
+
+<link rel="stylesheet" href="style.css">
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+/>
+</head>
+
+<body>
+<!-- ANTI-FLASH SCRIPT + DARK MODE (inline, app.js'ga bog'liq emas) -->
+<script>
+(function(){
+  try {
+    if (localStorage.getItem("theme") === "dark") {
+      document.body.classList.add("dark");
+    }
+  } catch(e) { console.error("Theme init error:", e); }
+})();
+
+function darkMode(){
+  document.body.classList.add("dark");
+  try { localStorage.setItem("theme", "dark"); } catch(e) { console.error(e); }
+  updateThemeIcon();
+  window.dispatchEvent(new CustomEvent("themeChanged", { detail: { theme: "dark" } }));
+}
+
+function lightMode(){
+  document.body.classList.remove("dark");
+  try { localStorage.setItem("theme", "light"); } catch(e) { console.error(e); }
+  updateThemeIcon();
+  window.dispatchEvent(new CustomEvent("themeChanged", { detail: { theme: "light" } }));
+}
+
+function toggleTheme(){
+  if (document.body.classList.contains("dark")) { lightMode(); } else { darkMode(); }
+}
+
+function updateThemeIcon(){
+  var btn = document.getElementById("themeToggleBtn");
+  if(btn){
+    if (document.body.classList.contains("dark")) {
+      btn.innerHTML = "☀️";
+      btn.setAttribute("title", "Yorug' rejim");
+    } else {
+      btn.innerHTML = "🌙";
+      btn.setAttribute("title", "Tungi rejim");
+    }
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function(){
+  updateThemeIcon();
+});
+</script>
+
+<div class="sidebar">
+<h2>💼 Oila Byudjeti</h2>
+<ul>
+  <li>
+    <a href="index.html"><span>🏠 Bosh sahifa</span></a>
+  </li>
+  <li class="active">
+    <a href="income.html"><span>💰 Daromadlar</span></a>
+  </li>
+  <li>
+    <a href="expense.html"><span>💸 Xarajatlar</span></a>
+  </li>
+  <li>
+    <a href="communal.html"><span>⚡ Kommunal</span></a>
+  </li>
+  <li>
+    <a href="qarz.html"><span>🤝 Qarzlar</span></a>
+  </li>
+  <li>
+    <a href="family.html"><span>👥 Oila a'zolari</span></a>
+  </li>
+  <li>
+    <a href="goals.html"><span>🎯 Maqsadlar</span></a>
+  </li>
+  <li>
+    <a href="reports.html"><span>📊 Hisobot</span></a>
+  </li>
+  <li>
+    <a href="settings.html"><span>⚙️ Sozlamalar</span></a>
+  </li>
+</ul>
+</div>
+
+<div class="main">
+<header>
+<h1>💰 Oila Daromadlari</h1>
+<div class="headerRight">
+  <button class="themeToggle" id="themeToggleBtn" onclick="toggleTheme()">
+    🌙
+  </button>
+  <div class="user"><i class="fa fa-user"></i> Admin</div>
+</div>
+</header>
+
+<div class="cards">
+<div class="card green">
+<h3>Jami daromad</h3>
+<h2 id="totalIncome">0 so'm</h2>
+</div>
+
+<div class="card blue">
+<h3>Bugungi daromad</h3>
+<h2 id="todayIncome">0 so'm</h2>
+</div>
+</div>
+
+<div class="panel">
+<h2>Yangi daromad kiritish</h2>
+<input 
+id="incomeName"
+placeholder="Daromad manbai (masalan, Otaning oylik maoshi, keshbek va h.k.)">
+
+<input 
+id="incomeAmount"
+type="number"
+placeholder="Summa">
+
+<select id="incomeCategory">
+<option>Maosh (Oylik)</option>
+<option>Tadbirkorlik / Biznes</option>
+<option>Nafqa / Stipendiya</option>
+<option>Qo'shimcha ish / Xizmat</option>
+<option>Keshbek / Sovg'a</option>
+<option>Boshqa</option>
+</select>
+
+<button onclick="addIncome()">+ Saqlash</button>
+</div>
+
+<div class="tableBox">
+<table>
+<thead>
+<tr>
+<th>Tavsif</th>
+<th>Kategoriya</th>
+<th>Summa</th>
+<th>Sana</th>
+</tr>
+</thead>
+<tbody id="incomeTable"></tbody>
+</table>
+</div>
+
+</div>
+
+<script src="app.js"></script>
+<script>
+let incomes = JSON.parse(localStorage.getItem("incomeData")) || [];
+
+function addIncome(){
+let name = document.getElementById("incomeName").value;
+let amount = Number(document.getElementById("incomeAmount").value);
+let category = document.getElementById("incomeCategory").value;
+
+if(name=="" || amount<=0){
+  alert("Ma'lumot kiriting");
+  return;
+}
+
+incomes.push({
+  name: name,
+  amount: amount,
+  category: category,
+  date: new Date().toLocaleDateString()
+});
+
+localStorage.setItem("incomeData", JSON.stringify(incomes));
+
+showIncome();
+document.getElementById("incomeName").value="";
+document.getElementById("incomeAmount").value="";
+}
+
+function showIncome(){
+let table = document.getElementById("incomeTable");
+table.innerHTML="";
+let total=0;
+let todayTotal = 0;
+const todayStr = new Date().toLocaleDateString();
+
+incomes.forEach(item=>{
+  total+=item.amount;
+  if(item.date === todayStr) {
+    todayTotal += item.amount;
+  }
+
+  table.innerHTML += `
+    <tr>
+      <td>${item.name}</td>
+      <td style="color: var(--primary-color); font-weight: 600;">${item.category}</td>
+      <td style="color: #10b981; font-weight: 600;">
+        + ${item.amount.toLocaleString()} so'm
+      </td>
+      <td style="color: var(--text-muted);">${item.date}</td>
+    </tr>
+  `;
+});
+
+document.getElementById("totalIncome").innerHTML = total.toLocaleString()+" so'm";
+document.getElementById("todayIncome").innerHTML = todayTotal.toLocaleString()+" so'm";
+}
+
+showIncome();
+</script>
+</body>
+</html>

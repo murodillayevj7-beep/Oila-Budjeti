@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="uz">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Qarzlar - Oila Byudjeti</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
+</head>
+
+<body>
+  <!-- ANTI-FLASH SCRIPT + DARK MODE (inline, app.js'ga bog'liq emas) -->
+<script>
+(function(){
+  try {
+    if (localStorage.getItem("theme") === "dark") {
+      document.body.classList.add("dark");
+    }
+  } catch(e) { console.error("Theme init error:", e); }
+})();
+
+function darkMode(){
+  document.body.classList.add("dark");
+  try { localStorage.setItem("theme", "dark"); } catch(e) { console.error(e); }
+  updateThemeIcon();
+  window.dispatchEvent(new CustomEvent("themeChanged", { detail: { theme: "dark" } }));
+}
+
+function lightMode(){
+  document.body.classList.remove("dark");
+  try { localStorage.setItem("theme", "light"); } catch(e) { console.error(e); }
+  updateThemeIcon();
+  window.dispatchEvent(new CustomEvent("themeChanged", { detail: { theme: "light" } }));
+}
+
+function toggleTheme(){
+  if (document.body.classList.contains("dark")) { lightMode(); } else { darkMode(); }
+}
+
+function updateThemeIcon(){
+  var btn = document.getElementById("themeToggleBtn");
+  if(btn){
+    if (document.body.classList.contains("dark")) {
+      btn.innerHTML = "☀️";
+      btn.setAttribute("title", "Yorug' rejim");
+    } else {
+      btn.innerHTML = "🌙";
+      btn.setAttribute("title", "Tungi rejim");
+    }
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function(){
+  updateThemeIcon();
+});
+</script>
+
+  <div class="sidebar">
+    <h2>💼 Oila Byudjeti</h2>
+    <ul>
+      <li>
+        <a href="index.html"><span>🏠 Bosh sahifa</span></a>
+      </li>
+      <li>
+        <a href="income.html"><span>💰 Daromadlar</span></a>
+      </li>
+      <li>
+        <a href="expense.html"><span>💸 Xarajatlar</span></a>
+      </li>
+      <li>
+        <a href="communal.html"><span>⚡ Kommunal</span></a>
+      </li>
+      <li class="active">
+        <a href="qarz.html"><span>🤝 Qarzlar</span></a>
+      </li>
+      <li>
+        <a href="family.html"><span>👥 Oila a'zolari</span></a>
+      </li>
+      <li>
+        <a href="goals.html"><span>🎯 Maqsadlar</span></a>
+      </li>
+      <li>
+        <a href="reports.html"><span>📊 Hisobot</span></a>
+      </li>
+      <li>
+        <a href="settings.html"><span>⚙️ Sozlamalar</span></a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="main">
+    <header>
+      <h1>🤝 Qarzlar</h1>
+      <div class="headerRight">
+        <button class="themeToggle" id="themeToggleBtn" onclick="toggleTheme()">
+          🌙
+        </button>
+        <div class="user"><i class="fa fa-user"></i> Admin</div>
+      </div>
+    </header>
+
+    <div class="cards">
+      <div class="card red">
+        <h3>Men qarzdorman (to'lanishi kerak)</h3>
+        <h2 id="totalOwedByMe">0 so'm</h2>
+      </div>
+      <div class="card green">
+        <h3>Menga qarz (qaytarilishi kerak)</h3>
+        <h2 id="totalOwedToMe">0 so'm</h2>
+      </div>
+      <div class="card orange">
+        <h3>Faol kreditlar (qolgan qarz)</h3>
+        <h2 id="totalCreditLeft">0 so'm</h2>
+      </div>
+      <div class="card blue">
+        <h3>Sof qarz balansi</h3>
+        <h2 id="netDebt">0 so'm</h2>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Yangi qarz / kredit ro'yxatga olish</h2>
+
+      <select id="debtType" onchange="updateDebtFormFields()">
+        <option value="berdim">Men berdim (menga qarzdor)</option>
+        <option value="oldim">Men oldim (men qarzdorman)</option>
+        <option value="kredit">Bank / muassasa krediti</option>
+      </select>
+
+      <input id="debtPerson" placeholder="Shaxs / Bank nomi (masalan, Aziz, Ipoteka banki)" />
+
+      <input id="debtAmount" type="number" placeholder="Umumiy summa (so'mda)" />
+
+      <input id="debtMonthly" type="number" placeholder="Oylik to'lov summasi (faqat kredit uchun, ixtiyoriy)" style="display:none;" />
+
+      <div class="date-picker-wrapper">
+        <input id="debtDue" type="text" placeholder="Muddatni tanlang (bosing)" readonly onclick="openCalendar()" />
+        <div id="calendarPopup" class="calendar-popup" style="display:none;"></div>
+      </div>
+
+      <input id="debtNote" placeholder="Qo'shimcha izoh (ixtiyoriy)" />
+
+      <button onclick="addDebt()">+ Saqlash</button>
+    </div>
+
+    <div class="tableBox" >
+      <h2>📋 Qarzlar ro'yxati</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Shaxs / Tashkilot</th>
+            <th>Turi</th>
+            <th>Summa</th>
+            <th>Muddati</th>
+            <th>Izoh</th>
+            <th>Holati</th>
+            <th>Amallar</th>
+          </tr>
+        </thead>
+        <tbody id="debtTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    let debtData = JSON.parse(localStorage.getItem("debtData")) || [];
+
+    // =========================
+    // CHIROYLI TAQVIM (DATE PICKER)
+    // =========================
+    let calendarViewDate = new Date();
+    let selectedDueDate = null;
+
+    const uzMonths = ["Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun", "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"];
+    const uzWeekdays = ["Du", "Se", "Ch", "Pa", "Ju", "Sh", "Ya"];
+
+    function openCalendar() {
+      renderCalendar();
+      document.getElementById("calendarPopup").style.display = "block";
+    }
+
+    function closeCalendar() {
+      document.getElementById("calendarPopup").style.display = "none";
+    }
+
+    document.addEventListener("click", function (e) {
+      let wrapper = document.querySelector(".date-picker-wrapper");
+      if (wrapper && !wrapper.contains(e.target)) {
+        closeCalendar();
+      }
+    });
+
+    function changeCalendarMonth(delta) {
+      calendarViewDate.setMonth(calendarViewDate.getMonth() + delta);
+      renderCalendar();
+    }
+
+    function pickDueDate(dateStr) {
+      selectedDueDate = dateStr;
+      document.getElementById("debtDue").value = formatUzDate(dateStr);
+      document.getElementById("debtDue").dataset.iso = dateStr;
+      closeCalendar();
+    }
+
+    function pickToday() {
+      let t = new Date();
+      let iso = t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0") + "-" + String(t.getDate()).padStart(2, "0");
+      calendarViewDate = new Date();
+      pickDueDate(iso);
+    }
+
+    function formatUzDate(iso) {
+      let parts = iso.split("-");
+      return parts[2] + "." + parts[1] + "." + parts[0];
+    }
+
+    function renderCalendar() {
+      let year = calendarViewDate.getFullYear();
+      let month = calendarViewDate.getMonth();
+      let firstDay = new Date(year, month, 1);
+      let startWeekDay = (firstDay.getDay() + 6) % 7; // Dushanbadan boshlash
+      let daysInMonth = new Date(year, month + 1, 0).getDate();
+      let today = new Date();
+
+      let html = `
+        <div class="calendar-header">
+          <button type="button" onclick="changeCalendarMonth(-1)">‹</button>
+          <span>${uzMonths[month]} ${year}</span>
+          <button type="button" onclick="changeCalendarMonth(1)">›</button>
+        </div>
+        <div class="calendar-weekdays">
+          ${uzWeekdays.map((d) => `<div>${d}</div>`).join("")}
+        </div>
+        <div class="calendar-grid">
+      `;
+
+      for (let i = 0; i < startWeekDay; i++) {
+        html += `<div class="calendar-day other-month">•</div>`;
+      }
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        let isToday = d === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+        let dateStr = year + "-" + String(month + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+        let isSelected = selectedDueDate === dateStr;
+        html += `<div class="calendar-day ${isToday ? "today" : ""} ${isSelected ? "selected" : ""}" onclick="pickDueDate('${dateStr}')">${d}</div>`;
+      }
+
+      html += `</div>
+        <div class="calendar-footer">
+          <button type="button" class="calendar-today-btn" onclick="pickToday()">Bugun</button>
+        </div>
+      `;
+
+      document.getElementById("calendarPopup").innerHTML = html;
+    }
+
+    function updateDebtFormFields() {
+      let type = document.getElementById("debtType").value;
+      document.getElementById("debtMonthly").style.display = (type === "kredit") ? "block" : "none";
+    }
+
+    function addDebt() {
+      let type = document.getElementById("debtType").value;
+      let person = document.getElementById("debtPerson").value.trim();
+      let amount = Number(document.getElementById("debtAmount").value);
+      let monthly = Number(document.getElementById("debtMonthly").value) || 0;
+      let due = document.getElementById("debtDue").dataset.iso || "";
+      let note = document.getElementById("debtNote").value || "Izoh yo'q";
+
+      if (person === "" || amount <= 0) {
+        alert("Iltimos, shaxs/bank nomi va to'g'ri summani kiriting!");
+        return;
+      }
+
+      debtData.push({
+        id: Date.now(),
+        type: type,
+        person: person,
+        amount: amount,
+        monthly: monthly,
+        paidAmount: 0,
+        due: due,
+        note: note,
+        paid: false,
+        date: new Date().toLocaleDateString(),
+      });
+
+      localStorage.setItem("debtData", JSON.stringify(debtData));
+
+      showDebts();
+
+      document.getElementById("debtPerson").value = "";
+      document.getElementById("debtAmount").value = "";
+      document.getElementById("debtMonthly").value = "";
+      document.getElementById("debtDue").value = "";
+      document.getElementById("debtDue").dataset.iso = "";
+      selectedDueDate = null;
+      document.getElementById("debtNote").value = "";
+    }
+
+    function togglePaid(id) {
+      debtData = debtData.map((item) => {
+        if (item.id === id) {
+          item.paid = !item.paid;
+        }
+        return item;
+      });
+      localStorage.setItem("debtData", JSON.stringify(debtData));
+      showDebts();
+    }
+
+    // Kredit uchun to'lov qilish: qolgan qarzni kamaytiradi VA byudjetdagi
+    // xarajatlar ro'yxatiga qo'shiladi, shu orqali umumiy byudjetdan ayriladi
+    function payCredit(id) {
+      let item = debtData.find((d) => d.id === id);
+      if (!item) return;
+
+      let remaining = item.amount - (item.paidAmount || 0);
+      let defaultVal = item.monthly > 0 ? item.monthly : remaining;
+      let amount = Number(prompt("Kreditga qancha to'lov qilmoqchisiz? (so'mda)", defaultVal));
+
+      if (isNaN(amount) || amount <= 0) {
+        alert("To'g'ri summani kiriting!");
+        return;
+      }
+      if (amount > remaining) amount = remaining;
+
+      item.paidAmount = (item.paidAmount || 0) + amount;
+      if (item.paidAmount >= item.amount) {
+        item.paid = true;
+      }
+
+      localStorage.setItem("debtData", JSON.stringify(debtData));
+
+      // Byudjetdan ayirish uchun xarajatlar ro'yxatiga yozamiz
+      let expenseData = JSON.parse(localStorage.getItem("expenseData")) || [];
+      expenseData.push({
+        name: item.person + " krediti to'lovi",
+        amount: amount,
+        category: "Kredit to'lovi",
+        date: new Date().toLocaleDateString(),
+      });
+      localStorage.setItem("expenseData", JSON.stringify(expenseData));
+
+      showDebts();
+      alert("To'lov qayd etildi va umumiy xarajatlarga qo'shildi.");
+    }
+
+    function deleteDebt(id) {
+      if (confirm("Ushbu qarz/kredit yozuvini o'chirasizmi?")) {
+        debtData = debtData.filter((item) => item.id !== id);
+        localStorage.setItem("debtData", JSON.stringify(debtData));
+        showDebts();
+      }
+    }
+
+    function showDebts() {
+      let table = document.getElementById("debtTable");
+      table.innerHTML = "";
+
+      let owedByMe = 0; // men oldim + kreditlar, hali to'lanmagan qismi
+      let owedToMe = 0; // men berdim, hali qaytarilmagan
+      let creditLeft = 0; // faqat kreditlarning qolgan qismi
+
+      debtData.forEach((item) => {
+        let remaining = item.amount - (item.paidAmount || 0);
+
+        if (!item.paid) {
+          if (item.type === "oldim") {
+            owedByMe += remaining;
+          } else if (item.type === "kredit") {
+            owedByMe += remaining;
+            creditLeft += remaining;
+          } else {
+            owedToMe += remaining;
+          }
+        }
+
+        let typeLabel;
+        if (item.type === "oldim") {
+          typeLabel = '<span style="color:#ef4444; font-weight:600;">Men oldim</span>';
+        } else if (item.type === "kredit") {
+          typeLabel = '<span style="color:#f97316; font-weight:600;">🏦 Kredit</span>';
+        } else {
+          typeLabel = '<span style="color:#10b981; font-weight:600;">Men berdim</span>';
+        }
+
+        let statusLabel = item.paid
+          ? '<span style="color:#10b981; font-weight:600;">✅ Yopilgan</span>'
+          : '<span style="color:#f97316; font-weight:600;">⏳ Ochiq</span>';
+
+        let amountCell = item.amount.toLocaleString() + " so'm";
+        if (item.type === "kredit" && item.paidAmount > 0) {
+          amountCell += `<br><span style="font-size:12px; color: var(--text-muted);">Qolgan: ${remaining.toLocaleString()} so'm</span>`;
+        }
+
+        let actionButtons = "";
+        if (item.type === "kredit" && !item.paid) {
+          actionButtons += `
+            <button onclick="payCredit(${item.id})" style="background:#3b82f6; padding:6px 12px; font-size:13px; width:auto; border-radius:8px; box-shadow:none; margin-bottom:6px;">
+              To'lov qilish
+            </button>`;
+        } else if (item.type !== "kredit") {
+          actionButtons += `
+            <button onclick="togglePaid(${item.id})" style="background:${item.paid ? "#6b7280" : "#10b981"}; padding:6px 12px; font-size:13px; width:auto; border-radius:8px; box-shadow:none; margin-bottom:6px;">
+              ${item.paid ? "Ochish" : "Yopish"}
+            </button>`;
+        }
+        actionButtons += `
+            <button onclick="deleteDebt(${item.id})" style="background:#ef4444; padding:6px 12px; font-size:13px; width:auto; border-radius:8px; box-shadow:none;">
+              <i class="fa fa-trash"></i>
+            </button>`;
+
+        table.innerHTML += `
+          <tr>
+            <td style="font-weight:600; color: var(--text-color);">${item.person}</td>
+            <td>${typeLabel}</td>
+            <td style="font-weight:600;">${amountCell}</td>
+            <td style="color: var(--text-muted);">${item.due ? formatUzDate(item.due) : "—"}</td>
+            <td style="font-style: italic; font-size: 14px; color: var(--text-muted);">${item.note}</td>
+            <td>${statusLabel}</td>
+            <td>${actionButtons}</td>
+          </tr>
+        `;
+      });
+
+      document.getElementById("totalOwedByMe").innerHTML = owedByMe.toLocaleString() + " so'm";
+      document.getElementById("totalOwedToMe").innerHTML = owedToMe.toLocaleString() + " so'm";
+      document.getElementById("totalCreditLeft").innerHTML = creditLeft.toLocaleString() + " so'm";
+      document.getElementById("netDebt").innerHTML = (owedToMe - owedByMe).toLocaleString() + " so'm";
+    }
+
+    showDebts();
+  </script>
+</body>
+
+</html>

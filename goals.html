@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kutilayotgan Maqsadlar - Oila Byudjeti</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
+</head>
+
+<body>
+    <!-- ANTI-FLASH SCRIPT + DARK MODE (inline, app.js'ga bog'liq emas) -->
+<script>
+(function(){
+  try {
+    if (localStorage.getItem("theme") === "dark") {
+      document.body.classList.add("dark");
+    }
+  } catch(e) { console.error("Theme init error:", e); }
+})();
+
+function darkMode(){
+  document.body.classList.add("dark");
+  try { localStorage.setItem("theme", "dark"); } catch(e) { console.error(e); }
+  updateThemeIcon();
+  window.dispatchEvent(new CustomEvent("themeChanged", { detail: { theme: "dark" } }));
+}
+
+function lightMode(){
+  document.body.classList.remove("dark");
+  try { localStorage.setItem("theme", "light"); } catch(e) { console.error(e); }
+  updateThemeIcon();
+  window.dispatchEvent(new CustomEvent("themeChanged", { detail: { theme: "light" } }));
+}
+
+function toggleTheme(){
+  if (document.body.classList.contains("dark")) { lightMode(); } else { darkMode(); }
+}
+
+function updateThemeIcon(){
+  var btn = document.getElementById("themeToggleBtn");
+  if(btn){
+    if (document.body.classList.contains("dark")) {
+      btn.innerHTML = "☀️";
+      btn.setAttribute("title", "Yorug' rejim");
+    } else {
+      btn.innerHTML = "🌙";
+      btn.setAttribute("title", "Tungi rejim");
+    }
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function(){
+  updateThemeIcon();
+});
+</script>
+
+    <div class="sidebar">
+        <h2>💼 Oila Byudjeti</h2>
+        <ul>
+            <li>
+                <a href="index.html"><span>🏠 Bosh sahifa</span></a>
+            </li>
+            <li>
+                <a href="income.html"><span>💰 Daromadlar</span></a>
+            </li>
+            <li>
+                <a href="expense.html"><span>💸 Xarajatlar</span></a>
+            </li>
+            <li>
+                <a href="communal.html"><span>⚡ Kommunal</span></a>
+            </li>
+            <li>
+                <a href="qarz.html"><span>🤝 Qarzlar</span></a>
+            </li>
+            <li>
+                <a href="family.html"><span>👥 Oila a'zolari</span></a>
+            </li>
+            <li class="active">
+                <a href="goals.html"><span>🎯 Maqsadlar</span></a>
+            </li>
+            <li>
+                <a href="reports.html"><span>📊 Hisobot</span></a>
+            </li>
+            <li>
+                <a href="settings.html"><span>⚙️ Sozlamalar</span></a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="main">
+        <header>
+            <h1>🎯 Jamg'arma Maqsadlari</h1>
+            <div class="headerRight">
+                <button class="themeToggle" id="themeToggleBtn" onclick="toggleTheme()">
+                    🌙
+                </button>
+                <div class="user"><i class="fa fa-user"></i> Admin</div>
+            </div>
+        </header>
+
+        <div class="panel">
+            <h2>Yangi maqsad belgilash</h2>
+            <input id="goalName" placeholder="Maqsad nomi (masalan, Yangi Uy, Avtomobil, Dam olish)" />
+            <input id="goalAmount" type="number" placeholder="Kerakli summa (so'mda)" />
+            <input id="goalSaved" type="number" placeholder="Boshlang'ich jamg'arilgan summa (so'mda, ixtiyoriy)" />
+            <button onclick="addGoal()">+ Maqsad qo'shish</button>
+        </div>
+
+        <div class="panel" id="goalsContainerHeader">
+            <h2>🎯 Sizning maqsadlaringiz</h2>
+            <div id="goalsList"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        let goals = JSON.parse(localStorage.getItem("goalData")) || [];
+
+        function addGoal() {
+            let name = document.getElementById("goalName").value.trim();
+            let target = Number(document.getElementById("goalAmount").value);
+            let saved = Number(document.getElementById("goalSaved").value) || 0;
+
+            if (name == "" || target <= 0) {
+                alert("Iltimos, maqsad nomi va to'g'ri summani kiriting!");
+                return;
+            }
+
+            goals.push({
+                id: Date.now(),
+                name: name,
+                target: target,
+                saved: saved,
+                date: new Date().toLocaleDateString()
+            });
+
+            localStorage.setItem("goalData", JSON.stringify(goals));
+            showGoals();
+
+            document.getElementById("goalName").value = "";
+            document.getElementById("goalAmount").value = "";
+            document.getElementById("goalSaved").value = "";
+        }
+
+        function addSavings(id) {
+            let amount = Number(prompt("Jamg'armaga qancha pul qo'shmoqchisiz? (so'mda)"));
+            if (isNaN(amount) || amount <= 0) {
+                alert("To'g'ri pul summasini kiriting!");
+                return;
+            }
+
+            goals = goals.map(item => {
+                if (item.id === id) {
+                    item.saved = Math.min(item.target, item.saved + amount);
+                }
+                return item;
+            });
+
+            localStorage.setItem("goalData", JSON.stringify(goals));
+            showGoals();
+        }
+
+        function deleteGoal(id) {
+            if (confirm("Ushbu maqsadni o'chirishni xohlaysizmi?")) {
+                goals = goals.filter(item => item.id !== id);
+                localStorage.setItem("goalData", JSON.stringify(goals));
+                showGoals();
+            }
+        }
+
+        function showGoals() {
+            let container = document.getElementById("goalsList");
+            container.innerHTML = "";
+
+            if (goals.length === 0) {
+                container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 20px;">Hozircha maqsadlar belgilanmagan. Yuqoridagi formadan yangi maqsad qo'shing!</div>`;
+                return;
+            }
+
+            goals.forEach(item => {
+                let percent = item.target > 0 ? Math.min(100, Math.round((item.saved / item.target) * 100)) : 0;
+
+                container.innerHTML += `
+            <div class="panel" style="margin-bottom: 0; border: 1px solid var(--border-color); background: var(--user-bg); animation: none; position: relative;">
+              <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 12px; color: var(--text-color);">${item.name}</h3>
+              <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;">
+                <span style="color: var(--text-muted);">Kerakli summa:</span>
+                <span style="font-weight: 600;">${item.target.toLocaleString()} so'm</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px;">
+                <span style="color: var(--text-muted);">Jamg'arilgan:</span>
+                <span style="font-weight: 600; color: #10b981;">${item.saved.toLocaleString()} so'm</span>
+              </div>
+              
+              <div class="progress-container">
+                <div class="progress-bar-fill" style="width: ${percent}%;"></div>
+              </div>
+              
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                <span style="font-size: 13px; font-weight: 700; color: var(--primary-color);">${percent}% bajarildi</span>
+                <div style="display: flex; gap: 8px;">
+                  <button onclick="addSavings(${item.id})" style="background: #10b981; padding: 6px 12px; font-size: 13px; width: auto; border-radius: 8px; box-shadow: none;">+ Pul</button>
+                  <button onclick="deleteGoal(${item.id})" style="background: #ef4444; padding: 6px 12px; font-size: 13px; width: auto; border-radius: 8px; box-shadow: none;"><i class="fa fa-trash"></i></button>
+                </div>
+              </div>
+            </div>
+          `;
+            });
+        }
+
+        showGoals();
+    </script>
+</body>
+
+</html>

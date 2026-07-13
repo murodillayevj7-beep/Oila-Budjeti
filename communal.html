@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="uz">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kommunal To'lovlar - Oila Byudjeti</title>
+    <link rel="stylesheet" href="style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <!-- ANTI-FLASH SCRIPT + DARK MODE (inline, app.js'ga bog'liq emas) -->
+<script>
+(function(){
+  try {
+    if (localStorage.getItem("theme") === "dark") {
+      document.body.classList.add("dark");
+    }
+  } catch(e) { console.error("Theme init error:", e); }
+})();
+
+function darkMode(){
+  document.body.classList.add("dark");
+  try { localStorage.setItem("theme", "dark"); } catch(e) { console.error(e); }
+  updateThemeIcon();
+  window.dispatchEvent(new CustomEvent("themeChanged", { detail: { theme: "dark" } }));
+}
+
+function lightMode(){
+  document.body.classList.remove("dark");
+  try { localStorage.setItem("theme", "light"); } catch(e) { console.error(e); }
+  updateThemeIcon();
+  window.dispatchEvent(new CustomEvent("themeChanged", { detail: { theme: "light" } }));
+}
+
+function toggleTheme(){
+  if (document.body.classList.contains("dark")) { lightMode(); } else { darkMode(); }
+}
+
+function updateThemeIcon(){
+  var btn = document.getElementById("themeToggleBtn");
+  if(btn){
+    if (document.body.classList.contains("dark")) {
+      btn.innerHTML = "☀️";
+      btn.setAttribute("title", "Yorug' rejim");
+    } else {
+      btn.innerHTML = "🌙";
+      btn.setAttribute("title", "Tungi rejim");
+    }
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function(){
+  updateThemeIcon();
+});
+</script>
+
+    <div class="sidebar">
+      <h2>💼 Oila Byudjeti</h2>
+      <ul>
+        <li>
+          <a href="index.html"><span>🏠 Bosh sahifa</span></a>
+        </li>
+        <li>
+          <a href="income.html"><span>💰 Daromadlar</span></a>
+        </li>
+        <li>
+          <a href="expense.html"><span>💸 Xarajatlar</span></a>
+        </li>
+        <li class="active">
+          <a href="communal.html"><span>⚡ Kommunal</span></a>
+        </li>
+        <li>
+          <a href="qarz.html"><span>🤝 Qarzlar</span></a>
+        </li>
+        <li>
+          <a href="family.html"><span>👥 Oila a'zolari</span></a>
+        </li>
+        <li>
+          <a href="goals.html"><span>🎯 Maqsadlar</span></a>
+        </li>
+        <li>
+          <a href="reports.html"><span>📊 Hisobot</span></a>
+        </li>
+        <li>
+          <a href="settings.html"><span>⚙️ Sozlamalar</span></a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="main">
+      <header>
+        <h1>⚡ Kommunal To'lovlar</h1>
+        <div class="headerRight">
+          <button class="themeToggle" id="themeToggleBtn" onclick="toggleTheme()">
+            🌙
+          </button>
+          <div class="user"><i class="fa fa-user"></i>Admin</div>
+        </div>
+      </header>
+
+      <div class="cards">
+        <div class="card orange">
+          <h3>Jami kommunal to'lovlar</h3>
+          <h2 id="totalCommunal">0 so'm</h2>
+        </div>
+        <div class="card blue">
+          <h3>Oxirgi to'lov</h3>
+          <h2 id="lastCommunal">0 so'm</h2>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Kommunal to'lovni ro'yxatga olish</h2>
+        
+        <select id="communalType">
+          <option>Elektr energiyasi (Svet)</option>
+          <option>Tabiiy gaz</option>
+          <option>Ichimlik suvi (Miya)</option>
+          <option>Issiq suv / Isitish</option>
+          <option>Internet / Telefon / TV</option>
+          <option>Chiqindi tozalash</option>
+          <option>Boshqa to'lov</option>
+        </select>
+        
+        <input id="communalAmount" type="number" placeholder="To'lov summasi (so'mda)" />
+        
+        <select id="communalPeriod">
+          <option>Yanvar, 2026</option>
+          <option>Fevral, 2026</option>
+          <option>Mart, 2026</option>
+          <option>Aprel, 2026</option>
+          <option>May, 2026</option>
+          <option>Iyun, 2026</option>
+          <option selected>Iyul, 2026</option>
+          <option>Avgust, 2026</option>
+          <option>Sentyabr, 2026</option>
+          <option>Oktyabr, 2026</option>
+          <option>Noyabr, 2026</option>
+          <option>Dekabr, 2026</option>
+        </select>
+        
+        <input id="communalNote" placeholder="Qo'shimcha qaydlar (masalan, kvitansiya raqami)" />
+        
+        <button onclick="addCommunal()">+ To'lovni saqlash</button>
+      </div>
+
+      <div class="tableBox">
+        <h2>🕒 To'langan kommunallar tarixi</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Xizmat turi</th>
+              <th>To'lov davri</th>
+              <th>Summa</th>
+              <th>Sana</th>
+              <th>Izoh / Qayd</th>
+            </tr>
+          </thead>
+          <tbody id="communalTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+      let communalData = JSON.parse(localStorage.getItem("communalData")) || [];
+
+      function addCommunal() {
+        let type = document.getElementById("communalType").value;
+        let amount = Number(document.getElementById("communalAmount").value);
+        let period = document.getElementById("communalPeriod").value;
+        let note = document.getElementById("communalNote").value || "Qayd yo'q";
+
+        if (amount <= 0) {
+          alert("To'g'ri to'lov summasini kiriting");
+          return;
+        }
+
+        communalData.push({
+          type: type,
+          amount: amount,
+          period: period,
+          note: note,
+          date: new Date().toLocaleDateString(),
+        });
+
+        localStorage.setItem("communalData", JSON.stringify(communalData));
+
+        showCommunal();
+
+        document.getElementById("communalAmount").value = "";
+        document.getElementById("communalNote").value = "";
+      }
+
+      function showCommunal() {
+        let table = document.getElementById("communalTable");
+        table.innerHTML = "";
+        
+        let total = 0;
+        let last = 0;
+
+        communalData.forEach((item, index) => {
+          total += item.amount;
+          last = item.amount; // The last element processed will be the most recent added
+
+          table.innerHTML += `
+            <tr>
+              <td style="font-weight: 600; color: var(--text-color);">${item.type}</td>
+              <td style="color: var(--primary-color); font-weight: 500;">${item.period}</td>
+              <td style="color: #f97316; font-weight: 600;">
+                ${item.amount.toLocaleString()} so'm
+              </td>
+              <td style="color: var(--text-muted);">${item.date}</td>
+              <td style="font-style: italic; font-size: 14px; color: var(--text-muted);">${item.note}</td>
+            </tr>
+          `;
+        });
+
+        document.getElementById("totalCommunal").innerHTML = total.toLocaleString() + " so'm";
+        document.getElementById("lastCommunal").innerHTML = last.toLocaleString() + " so'm";
+      }
+
+      showCommunal();
+    </script>
+  </body>
+</html>

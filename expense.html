@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="uz">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Xarajatlar - Oila Byudjeti</title>
+    <link rel="stylesheet" href="style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <!-- ANTI-FLASH SCRIPT + DARK MODE (inline, app.js'ga bog'liq emas) -->
+<script>
+(function(){
+  try {
+    if (localStorage.getItem("theme") === "dark") {
+      document.body.classList.add("dark");
+    }
+  } catch(e) { console.error("Theme init error:", e); }
+})();
+
+function darkMode(){
+  document.body.classList.add("dark");
+  try { localStorage.setItem("theme", "dark"); } catch(e) { console.error(e); }
+  updateThemeIcon();
+  window.dispatchEvent(new CustomEvent("themeChanged", { detail: { theme: "dark" } }));
+}
+
+function lightMode(){
+  document.body.classList.remove("dark");
+  try { localStorage.setItem("theme", "light"); } catch(e) { console.error(e); }
+  updateThemeIcon();
+  window.dispatchEvent(new CustomEvent("themeChanged", { detail: { theme: "light" } }));
+}
+
+function toggleTheme(){
+  if (document.body.classList.contains("dark")) { lightMode(); } else { darkMode(); }
+}
+
+function updateThemeIcon(){
+  var btn = document.getElementById("themeToggleBtn");
+  if(btn){
+    if (document.body.classList.contains("dark")) {
+      btn.innerHTML = "☀️";
+      btn.setAttribute("title", "Yorug' rejim");
+    } else {
+      btn.innerHTML = "🌙";
+      btn.setAttribute("title", "Tungi rejim");
+    }
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function(){
+  updateThemeIcon();
+});
+</script>
+
+    <div class="sidebar">
+      <h2>💼 Oila Byudjeti</h2>
+      <ul>
+        <li>
+          <a href="index.html"><span>🏠 Bosh sahifa</span></a>
+        </li>
+        <li>
+          <a href="income.html"><span>💰 Daromadlar</span></a>
+        </li>
+        <li class="active">
+          <a href="expense.html"><span>💸 Xarajatlar</span></a>
+        </li>
+        <li>
+          <a href="communal.html"><span>⚡ Kommunal</span></a>
+        </li>
+        <li>
+          <a href="qarz.html"><span>🤝 Qarzlar</span></a>
+        </li>
+        <li>
+          <a href="family.html"><span>👥 Oila a'zolari</span></a>
+        </li>
+        <li>
+          <a href="goals.html"><span>🎯 Maqsadlar</span></a>
+        </li>
+        <li>
+          <a href="reports.html"><span>📊 Hisobot</span></a>
+        </li>
+        <li>
+          <a href="settings.html"><span>⚙️ Sozlamalar</span></a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="main">
+      <header>
+        <h1>💸 Oila Xarajatlari</h1>
+        <div class="headerRight">
+          <button class="themeToggle" id="themeToggleBtn" onclick="toggleTheme()">
+            🌙
+          </button>
+          <div class="user"><i class="fa fa-user"></i> Admin</div>
+        </div>
+      </header>
+
+      <div class="cards">
+        <div class="card red">
+          <h3>Jami xarajat</h3>
+          <h2 id="totalExpense">0 so'm</h2>
+        </div>
+        <div class="card orange">
+          <h3>Bugungi xarajat</h3>
+          <h2 id="todayExpense">0 so'm</h2>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Yangi xarajat kiritish</h2>
+        <input id="expenseName" placeholder="Nima sotib olindi (masalan, Go'sht va sabzavotlar, Taksi va h.k.)" />
+        <input id="expenseAmount" type="number" placeholder="Summa" />
+        <select id="expenseCategory">
+          <option>Oziq-ovqat (Bozorlik)</option>
+          <option>Transport / Yoqilg'i</option>
+          <option>Kiyim-kechak</option>
+          <option>Ta'lim / Maktab / Kurs</option>
+          <option>Sog'liq / Dori-darmon</option>
+          <option>Uy-ro'zg'or buyumlari</option>
+          <option>Ko'ngilochar / Hordiq</option>
+          <option>Boshqa xarajatlar</option>
+        </select>
+        <button onclick="addExpense()">+ Saqlash</button>
+      </div>
+
+      <div class="tableBox">
+        <table>
+          <thead>
+            <tr>
+              <th>Nomi / Tavsif</th>
+              <th>Kategoriya</th>
+              <th>Summa</th>
+              <th>Sana</th>
+            </tr>
+          </thead>
+          <tbody id="expenseTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+      let expenses = JSON.parse(localStorage.getItem("expenseData")) || [];
+
+      function addExpense() {
+        let name = document.getElementById("expenseName").value;
+        let amount = Number(document.getElementById("expenseAmount").value);
+        let category = document.getElementById("expenseCategory").value;
+
+        if (name == "" || amount <= 0) {
+          alert("Ma'lumot kiriting");
+          return;
+        }
+
+        expenses.push({
+          name: name,
+          amount: amount,
+          category: category,
+          date: new Date().toLocaleDateString(),
+        });
+
+        localStorage.setItem(
+          "expenseData",
+          JSON.stringify(expenses),
+        );
+
+        showExpense();
+
+        document.getElementById("expenseName").value = "";
+        document.getElementById("expenseAmount").value = "";
+      }
+
+      function showExpense() {
+        let table = document.getElementById("expenseTable");
+        table.innerHTML = "";
+        let total = 0;
+        let todayTotal = 0;
+        const todayStr = new Date().toLocaleDateString();
+
+        expenses.forEach((item) => {
+          total += item.amount;
+          if (item.date === todayStr) {
+            todayTotal += item.amount;
+          }
+
+          table.innerHTML += `
+            <tr>
+              <td>${item.name}</td>
+              <td style="color: var(--primary-color); font-weight: 600;">${item.category}</td>
+              <td style="color: #ef4444; font-weight: 600;">
+                - ${item.amount.toLocaleString()} so'm
+              </td>
+              <td style="color: var(--text-muted);">${item.date}</td>
+            </tr>
+          `;
+        });
+
+        document.getElementById("totalExpense").innerHTML =
+          total.toLocaleString() + " so'm";
+        document.getElementById("todayExpense").innerHTML =
+          todayTotal.toLocaleString() + " so'm";
+      }
+
+      showExpense();
+    </script>
+  </body>
+</html>
