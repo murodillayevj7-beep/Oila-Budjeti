@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Oila a'zolari - Oila Byudjeti</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
+</head>
+
+<body>
+    <!-- ANTI-FLASH SCRIPT + DARK MODE (inline, app.js'ga bog'liq emas) -->
+<script>
+(function(){
+  try {
+    if (localStorage.getItem("theme") === "dark") {
+      document.body.classList.add("dark");
+    }
+  } catch(e) { console.error("Theme init error:", e); }
+})();
+
+function darkMode(){
+  document.body.classList.add("dark");
+  try { localStorage.setItem("theme", "dark"); } catch(e) { console.error(e); }
+  updateThemeIcon();
+  window.dispatchEvent(new CustomEvent("themeChanged", { detail: { theme: "dark" } }));
+}
+
+function lightMode(){
+  document.body.classList.remove("dark");
+  try { localStorage.setItem("theme", "light"); } catch(e) { console.error(e); }
+  updateThemeIcon();
+  window.dispatchEvent(new CustomEvent("themeChanged", { detail: { theme: "light" } }));
+}
+
+function toggleTheme(){
+  if (document.body.classList.contains("dark")) { lightMode(); } else { darkMode(); }
+}
+
+function updateThemeIcon(){
+  var btn = document.getElementById("themeToggleBtn");
+  if(btn){
+    if (document.body.classList.contains("dark")) {
+      btn.innerHTML = "☀️";
+      btn.setAttribute("title", "Yorug' rejim");
+    } else {
+      btn.innerHTML = "🌙";
+      btn.setAttribute("title", "Tungi rejim");
+    }
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function(){
+  updateThemeIcon();
+});
+</script>
+
+    <div class="sidebar">
+        <h2>💼 Oila Byudjeti</h2>
+        <ul>
+            <li>
+                <a href="index.html"><span>🏠 Bosh sahifa</span></a>
+            </li>
+            <li>
+                <a href="income.html"><span>💰 Daromadlar</span></a>
+            </li>
+            <li>
+                <a href="expense.html"><span>💸 Xarajatlar</span></a>
+            </li>
+            <li>
+                <a href="communal.html"><span>⚡ Kommunal</span></a>
+            </li>
+            <li>
+                <a href="qarz.html"><span>🤝 Qarzlar</span></a>
+            </li>
+            <li class="active">
+                <a href="family.html"><span>👥 Oila a'zolari</span></a>
+            </li>
+            <li>
+                <a href="goals.html"><span>🎯 Maqsadlar</span></a>
+            </li>
+            <li>
+                <a href="reports.html"><span>📊 Hisobot</span></a>
+            </li>
+            <li>
+                <a href="settings.html"><span>⚙️ Sozlamalar</span></a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="main">
+        <header>
+            <h1>👥 Oila a'zolari</h1>
+            <div class="headerRight">
+                <button class="themeToggle" id="themeToggleBtn" onclick="toggleTheme()">
+                    🌙
+                </button>
+                <div class="user"><i class="fa fa-user"></i> Admin</div>
+            </div>
+        </header>
+
+        <div class="cards">
+            <div class="card blue">
+                <h3>Jami a'zolar</h3>
+                <h2 id="totalMembers">0 kishi</h2>
+            </div>
+            <div class="card green">
+                <h3>Oila boshlig'i</h3>
+                <h2 id="headName">Kiritilmagan</h2>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Yangi oila a'zosini qo'shish</h2>
+            <input id="memberName" placeholder="Oila a'zosi ismi (masalan, Sardor)" />
+            <select id="memberRole">
+                <option>Ota (Oila boshlig'i)</option>
+                <option>Ona</option>
+                <option>O'g'il</option>
+                <option>Qiz</option>
+                <option>Bobo / Buvi</option>
+                <option>Boshqa a'zo</option>
+            </select>
+            <button onclick="addMember()">+ Qo'shish</button>
+        </div>
+
+        <div class="tableBox">
+            <h2>👥 Oila a'zolari ro'yxati</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ismi</th>
+                        <th>Rol / O'rni</th>
+                        <th>Kiritilgan sana</th>
+                        <th>Amallar</th>
+                    </tr>
+                </thead>
+                <tbody id="membersTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        let members = JSON.parse(localStorage.getItem("familyMembers")) || [];
+
+        function addMember() {
+            let name = document.getElementById("memberName").value.trim();
+            let role = document.getElementById("memberRole").value;
+
+            if (name == "") {
+                alert("Iltimos, oila a'zosi ismini kiriting!");
+                return;
+            }
+
+            members.push({
+                id: Date.now(),
+                name: name,
+                role: role,
+                date: new Date().toLocaleDateString(),
+            });
+
+            localStorage.setItem("familyMembers", JSON.stringify(members));
+            showMembers();
+            document.getElementById("memberName").value = "";
+        }
+
+        function deleteMember(id) {
+            if (confirm("Ushbu a'zoni ro'yxatdan o'chirasizmi?")) {
+                members = members.filter(item => item.id !== id);
+                localStorage.setItem("familyMembers", JSON.stringify(members));
+                showMembers();
+            }
+        }
+
+        function showMembers() {
+            let table = document.getElementById("membersTable");
+            table.innerHTML = "";
+
+            members.forEach((item) => {
+                table.innerHTML += `
+            <tr>
+              <td style="font-weight: 600; color: var(--text-color);">${item.name}</td>
+              <td style="color: var(--primary-color); font-weight: 600;">${item.role}</td>
+              <td style="color: var(--text-muted);">${item.date}</td>
+              <td>
+                <button onclick="deleteMember(${item.id})" style="background: #ef4444; padding: 6px 12px; font-size: 14px; width: auto; border-radius: 8px; box-shadow: none;">O'chirish</button>
+              </td>
+            </tr>
+          `;
+            });
+
+            document.getElementById("totalMembers").innerHTML = members.length + " kishi";
+
+            let settings = JSON.parse(localStorage.getItem("settings"));
+            let head = (settings && settings.owner) ? settings.owner : "";
+
+            if (!head) {
+                let headMember = members.find(item => item.role.includes("Oila boshlig'i") || item.role.includes("Ota"));
+                if (headMember) {
+                    head = headMember.name;
+                }
+            }
+
+            document.getElementById("headName").innerHTML = head || "Kiritilmagan";
+        }
+
+        showMembers();
+    </script>
+</body>
+
+</html>

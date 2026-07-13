@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="uz">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hisobot - AI Buxgalter</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+  <!-- ANTI-FLASH SCRIPT + DARK MODE (inline, app.js'ga bog'liq emas) -->
+<script>
+(function(){
+  try {
+    if (localStorage.getItem("theme") === "dark") {
+      document.body.classList.add("dark");
+    }
+  } catch(e) { console.error("Theme init error:", e); }
+})();
+
+function darkMode(){
+  document.body.classList.add("dark");
+  try { localStorage.setItem("theme", "dark"); } catch(e) { console.error(e); }
+  updateThemeIcon();
+  window.dispatchEvent(new CustomEvent("themeChanged", { detail: { theme: "dark" } }));
+}
+
+function lightMode(){
+  document.body.classList.remove("dark");
+  try { localStorage.setItem("theme", "light"); } catch(e) { console.error(e); }
+  updateThemeIcon();
+  window.dispatchEvent(new CustomEvent("themeChanged", { detail: { theme: "light" } }));
+}
+
+function toggleTheme(){
+  if (document.body.classList.contains("dark")) { lightMode(); } else { darkMode(); }
+}
+
+function updateThemeIcon(){
+  var btn = document.getElementById("themeToggleBtn");
+  if(btn){
+    if (document.body.classList.contains("dark")) {
+      btn.innerHTML = "☀️";
+      btn.setAttribute("title", "Yorug' rejim");
+    } else {
+      btn.innerHTML = "🌙";
+      btn.setAttribute("title", "Tungi rejim");
+    }
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function(){
+  updateThemeIcon();
+});
+</script>
+
+  <div class="sidebar">
+    <h2>💼 Oila Byudjeti</h2>
+    <ul>
+      <li>
+        <a href="index.html"><span>🏠 Bosh sahifa</span></a>
+      </li>
+      <li>
+        <a href="income.html"><span>💰 Daromadlar</span></a>
+      </li>
+      <li>
+        <a href="expense.html"><span>💸 Xarajatlar</span></a>
+      </li>
+      <li>
+        <a href="communal.html"><span>⚡ Kommunal</span></a>
+      </li>
+      <li>
+        <a href="qarz.html"><span>🤝 Qarzlar</span></a>
+      </li>
+      <li>
+        <a href="family.html"><span>👥 Oila a'zolari</span></a>
+      </li>
+      <li>
+        <a href="goals.html"><span>🎯 Maqsadlar</span></a>
+      </li>
+      <li class="active">
+        <a href="reports.html"><span>📊 Hisobot</span></a>
+      </li>
+      <li>
+        <a href="settings.html"><span>⚙️ Sozlamalar</span></a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="main">
+    <header>
+      <h1>📊 Moliyaviy Hisobot</h1>
+      <div class="headerRight">
+        <button class="themeToggle" id="themeToggleBtn" onclick="toggleTheme()">
+          🌙
+        </button>
+        <div class="user"><i class="fa fa-user"></i>Admin</div>
+      </div>
+    </header>
+
+    <div class="cards">
+      <div class="card green">
+        <h3>💰 Jami daromad</h3>
+        <h2 id="income">0 so'm</h2>
+      </div>
+      <div class="card red">
+        <h3>💸 Jami xarajat</h3>
+        <h2 id="expense">0 so'm</h2>
+      </div>
+      <div class="card blue">
+        <h3>🏦 Sof jamg'arma</h3>
+        <h2 id="profit">0 so'm</h2>
+      </div>
+      <div class="card orange">
+        <h3>📈 Jamg'arish darajasi</h3>
+        <h2 id="percent">0%</h2>
+      </div>
+    </div>
+
+    <div class="chartBox" style="max-width: 450px;">
+      <canvas id="reportChart"></canvas>
+    </div>
+
+    <div class="panel">
+      <h2>🤖 AI Moliyaviy Tahlil va Maslahatlar</h2>
+      <div id="analysis" style="font-size: 16px; font-weight: 500; line-height: 1.6;">Hisobot tayyorlanmoqda...</div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    try {
+      let incomes = [];
+      let expenses = [];
+      let communal = [];
+
+      try {
+        incomes = JSON.parse(localStorage.getItem("incomeData")) || [];
+        if (!Array.isArray(incomes)) incomes = [];
+      } catch (e) {
+        incomes = [];
+      }
+
+      try {
+        expenses = JSON.parse(localStorage.getItem("expenseData")) || [];
+        if (!Array.isArray(expenses)) expenses = [];
+      } catch (e) {
+        expenses = [];
+      }
+
+      try {
+        communal = JSON.parse(localStorage.getItem("communalData")) || [];
+        if (!Array.isArray(communal)) communal = [];
+      } catch (e) {
+        communal = [];
+      }
+
+      let incomeTotal = 0;
+      let expenseTotal = 0;
+
+      incomes.forEach((item) => {
+        if (item && typeof item.amount === "number") {
+          incomeTotal += item.amount;
+        }
+      });
+
+      expenses.forEach((item) => {
+        if (item && typeof item.amount === "number") {
+          expenseTotal += item.amount;
+        }
+      });
+
+      let communalTotal = 0;
+      communal.forEach((item) => {
+        if (item && typeof item.amount === "number") {
+          communalTotal += item.amount;
+          expenseTotal += item.amount; // total expense includes communal
+        }
+      });
+
+      let savings = incomeTotal - expenseTotal;
+      let savingsRate = incomeTotal > 0 ? Math.round((savings / incomeTotal) * 100) : 0;
+      if (savingsRate < 0) savingsRate = 0;
+
+      document.getElementById("income").innerHTML =
+        incomeTotal.toLocaleString() + " so'm";
+      document.getElementById("expense").innerHTML =
+        expenseTotal.toLocaleString() + " so'm";
+      document.getElementById("profit").innerHTML =
+        savings.toLocaleString() + " so'm";
+      document.getElementById("percent").innerHTML = savingsRate + "%";
+
+      // AI Analysis and Category Breakdown
+      let categories = {};
+      expenses.forEach(item => {
+        let cat = item.category || "Boshqa xarajatlar";
+        categories[cat] = (categories[cat] || 0) + item.amount;
+      });
+
+      if (communalTotal > 0) {
+        categories["Kommunal to'lovlar"] = communalTotal;
+      }
+
+      let highestCat = "";
+      let highestAmount = 0;
+      for (let cat in categories) {
+        if (categories[cat] > highestAmount) {
+          highestAmount = categories[cat];
+          highestCat = cat;
+        }
+      }
+
+      let analysisText = "";
+      if (incomeTotal === 0 && expenseTotal === 0) {
+        analysisText = "ℹ️ Hozircha oilaviy moliyaviy ma'lumotlar yetarli emas. Tahlilni ko'rish uchun daromad va xarajatlarni kiriting.";
+      } else {
+        if (savings > 0) {
+          analysisText = `✅ <b>Oilaviy byudjet barqaror!</b> Daromadingizning <b>${savingsRate}%</b> qismi (${savings.toLocaleString()} so'm) tejab qolindi. Jamg'arma maqsadlariga faol yo'naltirishni tavsiya etamiz.<br><br>`;
+        } else if (savings < 0) {
+          analysisText = `🚨 <b>Ogohlantirish!</b> Oilaviy xarajatlaringiz oylik daromaddan <b>${Math.abs(savings).toLocaleString()} so'm</b> oshib ketdi. Zudlik bilan xarajatlarni va keraksiz to'lovlarni qisqartirish zarur.<br><br>`;
+        } else {
+          analysisText = `⚠️ <b>Byudjet muvozanatda (nol balans)!</b> Daromadlar va xarajatlar teng bo'ldi. Oilaviy jamg'arma shakllantirish uchun ba'zi xarajat toifalarini qayta rejalashtirish lozim.<br><br>`;
+        }
+
+        if (highestAmount > 0 && expenseTotal > 0) {
+          let percentOfTotal = Math.round((highestAmount / expenseTotal) * 100);
+          analysisText += `📊 <b>Eng ko'p xarajat qilinayotgan yo'nalish:</b> "${highestCat}" bo'lib, u jami oilaviy xarajatlarning <b>${percentOfTotal}%</b> qismini (${highestAmount.toLocaleString()} so'm) tashkil qilmoqda.<br><br>`;
+
+          analysisText += "💡 <b>AI Moliyaviy maslahati:</b> ";
+          if (highestCat.includes("Oziq-ovqat")) {
+            analysisText += "Oziq-ovqat xarajatlarini tejash uchun haftalik bozorlik ro'yxatini oldindan tuzing, tayyor taom buyurtma qilishni kamaytirib, ko'proq uyda pishirishga harakat qiling.";
+          } else if (highestCat.includes("Transport")) {
+            analysisText += "Transport xarajatlarini optimallashtirish uchun shaxsiy mashinada keraksiz yurishlarni kamaytiring, taksi xizmatlari o'rniga jamoat transportidan foydalanishni ko'rib chiqing.";
+          } else if (highestCat.includes("Kiyim-kechak")) {
+            analysisText += "Kiyim-kechak uchun xarajatlarni kamaytirish maqsadida faqat haqiqiy zaruriy buyumlarni xarid qiling va mavsumiy chegirmalardan foydalaning.";
+          } else if (highestCat.includes("Kommunal")) {
+            analysisText += "Kommunal to'lovlarni tejash uchun uyda elektr chiroqlarini va isitish jihozlarini oqilona yoqing, suvni tejang va energiya tejovchi texnologiyalardan foydalaning.";
+          } else if (highestCat.includes("Kredit")) {
+            analysisText += "Kredit to'lovlari byudjetning katta qismini egallamoqda. Imkon qadar muddatidan oldin qo'shimcha to'lovlar qilib, foizlarni kamaytirishga, yoki yangi kredit olishdan saqlanishga harakat qiling.";
+          } else if (highestCat.includes("Ta'lim")) {
+            analysisText += "Ta'lim oila taraqqiyoti uchun eng yaxshi sarmoyadir! Biroq, barcha obunalar, darsliklar va kurslar samarali ekanligiga va keraksiz to'lovlar yo'qligiga ishonch hosil qiling.";
+          } else if (highestCat.includes("Ko'ngilochar")) {
+            analysisText += "Hordiq va ko'ngilochar tadbirlarga sarflanadigan mablag'ni biroz cheklab, ushbu pulni oilaviy jamg'arma maqsadlariga yo'naltirishingiz mumkin.";
+          } else {
+            analysisText += "Ushbu toifadagi xarajatlarni batafsil tahlil qiling va mayda, ko'zga ko'rinmas shaxsiy xarajatlarni optimallashtirish choralarini ko'ring.";
+          }
+        }
+      }
+
+      document.getElementById("analysis").innerHTML = analysisText;
+
+      let myChart = null;
+
+      function renderChart() {
+        if (typeof Chart === "undefined") {
+          console.warn("Chart.js is not loaded");
+          return;
+        }
+
+        const isDark = document.body.classList.contains("dark");
+        const textColor = isDark ? "#9ca3af" : "#475569";
+
+        const ctx = document.getElementById("reportChart");
+        if (!ctx) return;
+
+        if (myChart) {
+          myChart.destroy();
+        }
+
+        myChart = new Chart(ctx, {
+          type: "doughnut",
+          data: {
+            labels: ["Daromad", "Xarajat", "Sof jamg'arma"],
+            datasets: [
+              {
+                data: [incomeTotal, expenseTotal, Math.max(0, savings)],
+                backgroundColor: ["#10b981", "#ef4444", "#3b82f6"],
+                borderWidth: isDark ? 2 : 1,
+                borderColor: isDark ? "#111827" : "#ffffff",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  color: textColor,
+                  font: {
+                    family: "Outfit, sans-serif",
+                    size: 14,
+                    weight: "500",
+                  },
+                  padding: 20,
+                },
+              },
+            },
+          },
+        });
+      }
+
+      // Initial render
+      renderChart();
+
+      // Listen for theme changes to redraw the chart
+      window.addEventListener("themeChanged", () => {
+        renderChart();
+      });
+    } catch (err) {
+      alert("Hisobot sahifasida JavaScript xatoligi yuz berdi: " + err.message + "\nStack: " + err.stack);
+      console.error(err);
+    }
+  </script>
+</body>
+
+</html>

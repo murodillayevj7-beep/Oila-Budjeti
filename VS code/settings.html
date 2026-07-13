@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="uz">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sozlamalar - AI Buxgalter</title>
+    <link rel="stylesheet" href="style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <!-- ANTI-FLASH SCRIPT + DARK MODE (inline, app.js'ga bog'liq emas) -->
+<script>
+(function(){
+  try {
+    if (localStorage.getItem("theme") === "dark") {
+      document.body.classList.add("dark");
+    }
+  } catch(e) { console.error("Theme init error:", e); }
+})();
+
+function darkMode(){
+  document.body.classList.add("dark");
+  try { localStorage.setItem("theme", "dark"); } catch(e) { console.error(e); }
+  updateThemeIcon();
+  window.dispatchEvent(new CustomEvent("themeChanged", { detail: { theme: "dark" } }));
+}
+
+function lightMode(){
+  document.body.classList.remove("dark");
+  try { localStorage.setItem("theme", "light"); } catch(e) { console.error(e); }
+  updateThemeIcon();
+  window.dispatchEvent(new CustomEvent("themeChanged", { detail: { theme: "light" } }));
+}
+
+function toggleTheme(){
+  if (document.body.classList.contains("dark")) { lightMode(); } else { darkMode(); }
+}
+
+function updateThemeIcon(){
+  var btn = document.getElementById("themeToggleBtn");
+  if(btn){
+    if (document.body.classList.contains("dark")) {
+      btn.innerHTML = "☀️";
+      btn.setAttribute("title", "Yorug' rejim");
+    } else {
+      btn.innerHTML = "🌙";
+      btn.setAttribute("title", "Tungi rejim");
+    }
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function(){
+  updateThemeIcon();
+});
+</script>
+
+    <div class="sidebar">
+      <h2>💼 Oila Byudjeti</h2>
+      <ul>
+        <li>
+          <a href="index.html"><span>🏠 Bosh sahifa</span></a>
+        </li>
+        <li>
+          <a href="income.html"><span>💰 Daromadlar</span></a>
+        </li>
+        <li>
+          <a href="expense.html"><span>💸 Xarajatlar</span></a>
+        </li>
+        <li>
+          <a href="communal.html"><span>⚡ Kommunal</span></a>
+        </li>
+        <li>
+          <a href="qarz.html"><span>🤝 Qarzlar</span></a>
+        </li>
+        <li>
+          <a href="family.html"><span>👥 Oila a'zolari</span></a>
+        </li>
+        <li>
+          <a href="goals.html"><span>🎯 Maqsadlar</span></a>
+        </li>
+        <li>
+          <a href="reports.html"><span>📊 Hisobot</span></a>
+        </li>
+        <li class="active">
+          <a href="settings.html"><span>⚙️ Sozlamalar</span></a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="main">
+      <header>
+        <h1>⚙️ Sozlamalar</h1>
+        <div class="headerRight">
+          <button class="themeToggle" id="themeToggleBtn" onclick="toggleTheme()">
+            🌙
+          </button>
+          <div class="user"><i class="fa fa-user"></i>Admin</div>
+        </div>
+      </header>
+
+      <div class="panel">
+        <h2>🏠 Oila ma'lumotlari</h2>
+        <input id="family" placeholder="Oila nomi / Familiyasi" />
+        <input id="owner" placeholder="Oila boshlig'i (Admin) ismi" />
+        <input id="phone" placeholder="Telefon raqam" />
+        <select id="currency">
+          <option value="UZS">So'm (UZS)</option>
+          <option value="USD">Dollar ($)</option>
+          <option value="EUR">Euro (€)</option>
+        </select>
+        <button onclick="saveSettings()">💾 Saqlash</button>
+      </div>
+
+      <div class="panel">
+        <h2>🎨 Dizayn mavzusi</h2>
+        <button id="settingsLightBtn" style="background: #e2e8f0; color: #1f2937; border: 1px solid #cbd5e1; margin-bottom: 12px;">☀️ Light Mode (Yorug' rejim)</button>
+        <button id="settingsDarkBtn" style="background: #1e293b; color: #f3f4f6; border: 1px solid #334155;">🌙 Dark Mode (Tungi rejim)</button>
+      </div>
+
+      <div class="panel">
+        <h2>⚠️ Tizim amallari</h2>
+        <button onclick="clearData()" style="background: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);">🗑 Barcha ma'lumotlarni o'chirish</button>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+      function saveSettings() {
+        let settings = {
+          family: document.getElementById("family").value,
+          owner: document.getElementById("owner").value,
+          phone: document.getElementById("phone").value,
+          currency: document.getElementById("currency").value,
+        };
+
+        localStorage.setItem(
+          "settings",
+          JSON.stringify(settings),
+        );
+
+        alert("Sozlamalar muvaffaqiyatli saqlandi!");
+        location.reload();
+      }
+
+      function clearData() {
+        let check = confirm("Diqqat! Barcha kiritilgan ma'lumotlar (daromadlar, xarajatlar, oila a'zolari va maqsadlar) o'chirib tashlanadi. Ushbu amalni tasdiqlaysizmi?");
+        if (check) {
+          localStorage.clear();
+          alert("Barcha ma'lumotlar o'chirildi.");
+          location.reload();
+        }
+      }
+
+      // Load saved settings in inputs
+      document.addEventListener("DOMContentLoaded", () => {
+        let settings = JSON.parse(localStorage.getItem("settings"));
+        if (settings) {
+          document.getElementById("family").value = settings.family || "";
+          document.getElementById("owner").value = settings.owner || "";
+          document.getElementById("phone").value = settings.phone || "";
+          document.getElementById("currency").value = settings.currency || "UZS";
+        }
+      });
+    </script>
+  </body>
+</html>
