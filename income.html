@@ -1,20 +1,39 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- Saytingizning Google-dagi nomi -->
-    <title>Oila Budjeti - Shaxsiy va oilaviy moliyani boshqarish</title>
-    
-    <!-- Sayt haqida qisqa tavsif (Google-da qidiruv natijasi ostida chiqadi) -->
-    <meta name="description" content="Oila Budjeti - daromadlar va xarajatlarni hisob-kitob qilish, qarzlar va kommunal to'lovlarni nazorat qilish uchun eng qulay onlayn dastur.">
-    
-    <!-- Kalit so'zlar (Keywords) -->
-    <meta name="keywords" content="Oila budjeti, oila byudjeti, xarajatlar hisobi, daromad va xarajat, moliya nazorati, pul jamg'arish">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<title>Daromadlar - Shaxsiy va oilaviy moliyani boshqarish</title>
+    <meta name="description" content="Oila Budjeti - daromadlar va xarajatlarni hisob-kitob qilish, qarzlar va kommunal to'lovlarni nazorat qilish uchun eng qulay onlayn dastur." />
+    <meta name="keywords" content="Oila budjeti, Shaxsiy va oilaviy moliyani boshqarish, xarajatlar hisobi, daromad va xarajat, moliya nazorati, pul jamg'arish" />
 
-<title>Daromadlar - Oila Byudjeti</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+    <link rel="manifest" href="site.webmanifest" />
+    <meta name="theme-color" content="#2563eb" />
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://oila-byudjeti.uz/income.html" />
+
+    <!-- Open Graph / Facebook / Telegram -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://oila-byudjeti.uz/income.html" />
+    <meta property="og:title" content="Daromadlar - Shaxsiy va oilaviy moliyani boshqarish" />
+    <meta property="og:description" content="Oila Budjeti - daromadlar va xarajatlarni hisob-kitob qilish, qarzlar va kommunal to'lovlarni nazorat qilish uchun eng qulay onlayn dastur." />
+    <meta property="og:image" content="https://oila-byudjeti.uz/og-image.png" />
+    <meta property="og:locale" content="uz_UZ" />
+    <meta property="og:site_name" content="Oila Byudjeti" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Daromadlar - Shaxsiy va oilaviy moliyani boshqarish" />
+    <meta name="twitter:description" content="Oila Budjeti - daromadlar va xarajatlarni hisob-kitob qilish, qarzlar va kommunal to'lovlarni nazorat qilish uchun eng qulay onlayn dastur." />
+    <meta name="twitter:image" content="https://oila-byudjeti.uz/og-image.png" />
+
 
 <link rel="stylesheet" href="style.css">
 <link
@@ -71,7 +90,7 @@ document.addEventListener("DOMContentLoaded", function(){
 </script>
 
 <div class="sidebar">
-<h2>💼 Oila Byudjeti</h2>
+<h2>💼 Shaxsiy va oilaviy moliyani boshqarish</h2>
 <ul>
   <li>
     <a href="index.html"><span>🏠 Bosh sahifa</span></a>
@@ -157,6 +176,7 @@ placeholder="Summa">
 <th>Kategoriya</th>
 <th>Summa</th>
 <th>Sana</th>
+<th>Amallar</th>
 </tr>
 </thead>
 <tbody id="incomeTable"></tbody>
@@ -193,6 +213,14 @@ document.getElementById("incomeName").value="";
 document.getElementById("incomeAmount").value="";
 }
 
+function deleteIncome(index){
+  if(confirm("Ushbu daromad yozuvini o'chirasizmi?")){
+    incomes.splice(index, 1);
+    localStorage.setItem("incomeData", JSON.stringify(incomes));
+    showIncome();
+  }
+}
+
 function showIncome(){
 let table = document.getElementById("incomeTable");
 table.innerHTML="";
@@ -200,7 +228,7 @@ let total=0;
 let todayTotal = 0;
 const todayStr = new Date().toLocaleDateString();
 
-incomes.forEach(item=>{
+incomes.forEach((item, index)=>{
   total+=item.amount;
   if(item.date === todayStr) {
     todayTotal += item.amount;
@@ -214,6 +242,11 @@ incomes.forEach(item=>{
         + ${item.amount.toLocaleString()} so'm
       </td>
       <td style="color: var(--text-muted);">${item.date}</td>
+      <td>
+        <button onclick="deleteIncome(${index})" style="background:#ef4444; padding:6px 12px; font-size:13px; width:auto; border-radius:8px; box-shadow:none;">
+          <i class="fa fa-trash"></i>
+        </button>
+      </td>
     </tr>
   `;
 });
