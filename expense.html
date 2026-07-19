@@ -175,9 +175,13 @@ document.addEventListener("DOMContentLoaded", function(){
       </div>
     </div>
 
+    <!-- Firebase (oila bo'lib sinxron ishlash uchun) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
     <script src="app.js"></script>
     <script>
-      let expenses = JSON.parse(localStorage.getItem("expenseData")) || [];
+      let expenses = cloudGetArray("expenseData");
 
       function addExpense() {
         let name = document.getElementById("expenseName").value;
@@ -196,10 +200,7 @@ document.addEventListener("DOMContentLoaded", function(){
           date: new Date().toLocaleDateString(),
         });
 
-        localStorage.setItem(
-          "expenseData",
-          JSON.stringify(expenses),
-        );
+        cloudSave("expenseData", expenses);
 
         showExpense();
 
@@ -210,7 +211,7 @@ document.addEventListener("DOMContentLoaded", function(){
       function deleteExpense(index) {
         if (confirm("Ushbu xarajat yozuvini o'chirasizmi?")) {
           expenses.splice(index, 1);
-          localStorage.setItem("expenseData", JSON.stringify(expenses));
+          cloudSave("expenseData", expenses);
           showExpense();
         }
       }
@@ -252,6 +253,7 @@ document.addEventListener("DOMContentLoaded", function(){
       }
 
       showExpense();
+    subscribeCloud("expenseData", showExpense);
     </script>
   </body>
 </html>

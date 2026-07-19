@@ -206,56 +206,15 @@ document.addEventListener("DOMContentLoaded", function(){
     </div>
 
     <!-- GLOBAL JS -->
+    <!-- Firebase (oila bo'lib sinxron ishlash uchun) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
     <script src="app.js"></script>
     <script>
-      let incomeData = JSON.parse(localStorage.getItem("incomeData")) || [];
-      let expenseData = JSON.parse(localStorage.getItem("expenseData")) || [];
-      let communalData = JSON.parse(localStorage.getItem("communalData")) || [];
-      let debtData = JSON.parse(localStorage.getItem("debtData")) || [];
-
-      let income = 0;
-      let expense = 0;
-      let communal = 0;
-
-      incomeData.forEach((item) => {
-        income += item.amount;
-      });
-
-      expenseData.forEach((item) => {
-        expense += item.amount;
-      });
-
-      communalData.forEach((item) => {
-        communal += item.amount;
-      });
-
-      // Total expense includes direct family expenses and paid utilities
-      let totalExpense = expense + communal;
-      let savings = income - totalExpense;
-
-      document.getElementById("income").innerHTML = income.toLocaleString() + " so'm";
-      document.getElementById("expense").innerHTML = totalExpense.toLocaleString() + " so'm";
-      document.getElementById("profit").innerHTML = savings.toLocaleString() + " so'm";
-      document.getElementById("communalPaid").innerHTML = communal.toLocaleString() + " so'm";
-
-      let owedByMe = 0;
-      let owedToMe = 0;
-      debtData.forEach((item) => {
-        let remaining = item.amount - (item.paidAmount || 0);
-        if (!item.paid) {
-          if (item.type === "oldim" || item.type === "kredit") {
-            owedByMe += remaining;
-          } else {
-            owedToMe += remaining;
-          }
-        }
-      });
-      let netDebtBalance = owedToMe - owedByMe;
-      document.getElementById("debtBalance").innerHTML = netDebtBalance.toLocaleString() + " so'm";
-
       let myChart = null;
 
-      function renderChart() {
+      function renderChart(income, totalExpense, savings) {
         const isDark = document.body.classList.contains("dark");
         const gridColor = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)";
         const textColor = isDark ? "#9ca3af" : "#475569";
@@ -315,43 +274,6 @@ document.addEventListener("DOMContentLoaded", function(){
         });
       }
 
-      // Initial render
-      renderChart();
-
-      // Listen for theme changes to redraw the chart
-      window.addEventListener("themeChanged", () => {
-        renderChart();
-      });
-
-      let all = [];
-
-      incomeData.forEach((x) => {
-        all.push({
-          name: x.name,
-          type: "Daromad",
-          amount: x.amount,
-          date: x.date,
-        });
-      });
-
-      expenseData.forEach((x) => {
-        all.push({
-          name: x.name,
-          type: "Xarajat",
-          amount: x.amount,
-          date: x.date,
-        });
-      });
-
-      communalData.forEach((x) => {
-        all.push({
-          name: x.type + " to'lovi",
-          type: "Kommunal",
-          amount: x.amount,
-          date: x.date,
-        });
-      });
-
       // Sort by date (convert DD.MM.YYYY to Date object)
       function parseDate(str) {
         if (!str) return new Date(0);
@@ -362,13 +284,67 @@ document.addEventListener("DOMContentLoaded", function(){
         return new Date(str);
       }
 
-      all.sort((a, b) => parseDate(b.date) - parseDate(a.date));
+      let lastChartValues = { income: 0, totalExpense: 0, savings: 0 };
 
-      let table = document.getElementById("operations");
+      function renderDashboard() {
+        let incomeData = cloudGetArray("incomeData");
+        let expenseData = cloudGetArray("expenseData");
+        let communalData = cloudGetArray("communalData");
+        let debtData = cloudGetArray("debtData");
 
-      all
-        .slice(0, 10)
-        .forEach((x) => {
+        let income = 0;
+        let expense = 0;
+        let communal = 0;
+
+        incomeData.forEach((item) => { income += item.amount; });
+        expenseData.forEach((item) => { expense += item.amount; });
+        communalData.forEach((item) => { communal += item.amount; });
+
+        // Total expense includes direct family expenses and paid utilities
+        let totalExpense = expense + communal;
+        let savings = income - totalExpense;
+
+        document.getElementById("income").innerHTML = income.toLocaleString() + " so'm";
+        document.getElementById("expense").innerHTML = totalExpense.toLocaleString() + " so'm";
+        document.getElementById("profit").innerHTML = savings.toLocaleString() + " so'm";
+        document.getElementById("communalPaid").innerHTML = communal.toLocaleString() + " so'm";
+
+        let owedByMe = 0;
+        let owedToMe = 0;
+        debtData.forEach((item) => {
+          let remaining = item.amount - (item.paidAmount || 0);
+          if (!item.paid) {
+            if (item.type === "oldim" || item.type === "kredit") {
+              owedByMe += remaining;
+            } else {
+              owedToMe += remaining;
+            }
+          }
+        });
+        let netDebtBalance = owedToMe - owedByMe;
+        document.getElementById("debtBalance").innerHTML = netDebtBalance.toLocaleString() + " so'm";
+
+        lastChartValues = { income, totalExpense, savings };
+        renderChart(income, totalExpense, savings);
+
+        let all = [];
+
+        incomeData.forEach((x) => {
+          all.push({ name: x.name, type: "Daromad", amount: x.amount, date: x.date });
+        });
+        expenseData.forEach((x) => {
+          all.push({ name: x.name, type: "Xarajat", amount: x.amount, date: x.date });
+        });
+        communalData.forEach((x) => {
+          all.push({ name: x.type + " to'lovi", type: "Kommunal", amount: x.amount, date: x.date });
+        });
+
+        all.sort((a, b) => parseDate(b.date) - parseDate(a.date));
+
+        let table = document.getElementById("operations");
+        table.innerHTML = "";
+
+        all.slice(0, 10).forEach((x) => {
           let typeClass = "";
           if (x.type === "Daromad") {
             typeClass = "color: #10b981;";
@@ -377,7 +353,7 @@ document.addEventListener("DOMContentLoaded", function(){
           } else {
             typeClass = "color: #f97316;"; // Communal
           }
-          
+
           table.innerHTML += `
             <tr>
               <td>${x.name}</td>
@@ -387,6 +363,21 @@ document.addEventListener("DOMContentLoaded", function(){
             </tr>
           `;
         });
+      }
+
+      // Initial render
+      renderDashboard();
+
+      // Listen for theme changes to redraw the chart with correct colors
+      window.addEventListener("themeChanged", () => {
+        renderChart(lastChartValues.income, lastChartValues.totalExpense, lastChartValues.savings);
+      });
+
+      // Oila a'zolaridan biri biror narsa qo'shsa/o'zgartirsa, shu sahifa ham jonli yangilanadi
+      subscribeCloud("incomeData", renderDashboard);
+      subscribeCloud("expenseData", renderDashboard);
+      subscribeCloud("communalData", renderDashboard);
+      subscribeCloud("debtData", renderDashboard);
     </script>
   </body>
 </html>

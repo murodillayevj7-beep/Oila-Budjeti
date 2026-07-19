@@ -238,3 +238,154 @@ function showPrettyAlert(message){
 window.alert = function(message){
     showPrettyAlert(message);
 };
+
+// ===================================
+// OILA BULUT SINXRONIZATSIYASI (Firebase)
+// ===================================
+// Bu qism ma'lumotlarni bir nechta odam (oila a'zolari) orasida
+// umumiy "oila kodi" orqali sinxron qiladi. Agar Firebase ulanmagan
+// bo'lsa yoki oila kodi kiritilmagan bo'lsa, sayt oddiy localStorage
+// bilan ishlashda davom etadi (hech narsa buzilmaydi).
+
+let cloudDb = null;
+let cloudReady = false;
+
+(function initCloud(){
+    try {
+        if (typeof firebase !== "undefined" && window.firebaseConfig && window.firebaseConfig.apiKey && window.firebaseConfig.apiKey !== "SIZNING_API_KEYINGIZ") {
+            if (!firebase.apps || !firebase.apps.length) {
+                firebase.initializeApp(window.firebaseConfig);
+            }
+            cloudDb = firebase.firestore();
+            cloudReady = true;
+        }
+    } catch (e) {
+        console.error("Firebase ulanmadi:", e);
+        cloudDb = null;
+        cloudReady = false;
+    }
+})();
+
+function isCloudReady(){
+    return cloudReady && !!cloudDb;
+}
+
+function getFamilyCode(){
+    return localStorage.getItem("familyCode") || "";
+}
+
+function generateFamilyCode(){
+    const words = ["OILA", "UY", "QUYOSH", "YULDUZ", "BAXT", "GULZOR", "OSMON", "DARYO", "BULOQ", "NAVRO'Z"];
+    const w = words[Math.floor(Math.random() * words.length)];
+    const n = Math.floor(1000 + Math.random() * 9000);
+    return w + "-" + n;
+}
+
+// Yangi oila yaratish: tasodifiy kod hosil qiladi va uni bulutga yozadi
+async function createFamily(){
+    if (!isCloudReady()) {
+        alert("Bulut ulanish sozlanmagan. Iltimos, avval Firebase konfiguratsiyasini kiriting.");
+        return null;
+    }
+    try {
+        let code = generateFamilyCode();
+        await cloudDb.collection("families").doc(code).set({
+            createdAt: Date.now(),
+        });
+        localStorage.setItem("familyCode", code);
+        return code;
+    } catch (e) {
+        console.error("Oila yaratishda xatolik:", e);
+        alert("Oila yaratishda xatolik yuz berdi: " + e.message);
+        return null;
+    }
+}
+
+// Mavjud oilaga kod orqali qo'shilish
+async function joinFamily(code){
+    code = (code || "").trim().toUpperCase();
+    if (!code) {
+        alert("Iltimos, oila kodini kiriting!");
+        return false;
+    }
+    if (!isCloudReady()) {
+        alert("Bulut ulanish sozlanmagan. Iltimos, avval Firebase konfiguratsiyasini kiriting.");
+        return false;
+    }
+    try {
+        let docRef = cloudDb.collection("families").doc(code);
+        let docSnap = await docRef.get();
+        if (!docSnap.exists) {
+            alert("Bunday oila kodi topilmadi. Kodni tekshirib qaytadan kiriting.");
+            return false;
+        }
+        localStorage.setItem("familyCode", code);
+
+        // Qo'shilgan zahoti bulutdagi barcha mavjud ma'lumotlarni shu qurilmaga tortib olamiz
+        let data = docSnap.data();
+        const keys = ["incomeData", "expenseData", "communalData", "debtData", "familyMembers", "goalData", "settings"];
+        keys.forEach((k) => {
+            if (data && data[k] !== undefined) {
+                localStorage.setItem(k, JSON.stringify(data[k]));
+            }
+        });
+
+        return true;
+    } catch (e) {
+        console.error("Oilaga qo'shilishda xatolik:", e);
+        alert("Xatolik yuz berdi: " + e.message);
+        return false;
+    }
+}
+
+// Oiladan chiqish (faqat shu qurilmada bulut bilan bog'lanishni to'xtatadi)
+function leaveFamily(){
+    localStorage.removeItem("familyCode");
+}
+
+// Ma'lumotni HAM localStorage'ga, HAM (agar oila kodi bo'lsa) bulutga saqlaydi
+function cloudSave(key, data){
+    localStorage.setItem(key, JSON.stringify(data));
+    let code = getFamilyCode();
+    if (isCloudReady() && code) {
+        cloudDb.collection("families").doc(code).set(
+            { [key]: data },
+            { merge: true }
+        ).catch((e) => console.error("cloudSave xatosi (" + key + "):", e));
+    }
+}
+
+// Ma'lumotni localStorage'dan o'qiydi (har doim tez, oflayn ishlaydi)
+function cloudGetArray(key){
+    try {
+        return JSON.parse(localStorage.getItem(key)) || [];
+    } catch (e) {
+        return [];
+    }
+}
+
+// Berilgan kalit uchun bulutdagi o'zgarishlarni jonli kuzatadi.
+// O'zgarish bo'lsa, localStorage'ni yangilaydi va sahifani qayta chizadi.
+const _cloudUnsubscribers = {};
+function subscribeCloud(key, renderFn){
+    let code = getFamilyCode();
+    if (!isCloudReady() || !code) return;
+
+    if (_cloudUnsubscribers[key]) {
+        _cloudUnsubscribers[key]();
+    }
+
+    _cloudUnsubscribers[key] = cloudDb.collection("families").doc(code)
+        .onSnapshot((docSnap) => {
+            if (docSnap.exists) {
+                let data = docSnap.data();
+                if (data && data[key] !== undefined) {
+                    let newValue = JSON.stringify(data[key]);
+                    if (newValue !== localStorage.getItem(key)) {
+                        localStorage.setItem(key, newValue);
+                        if (typeof renderFn === "function") renderFn();
+                    }
+                }
+            }
+        }, (e) => console.error("subscribeCloud xatosi (" + key + "):", e));
+}

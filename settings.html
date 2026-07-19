@@ -132,6 +132,33 @@ document.addEventListener("DOMContentLoaded", function(){
       </header>
 
       <div class="panel">
+        <h2>👨‍👩‍👧‍👦 Oila bilan birga ishlash</h2>
+        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px; line-height: 1.6;">
+          Oila kodi orqali bir nechta odam bir xil ma'lumotlarni (daromad, xarajat, qarz va h.k.) ko'ra va tahrirlay oladi.
+        </p>
+
+        <div id="noFamilyBlock">
+          <button onclick="handleCreateFamily()">➕ Yangi oila yaratish</button>
+          <input id="joinCodeInput" placeholder="Oila kodini kiriting (masalan OILA-4521)" style="text-transform: uppercase;" />
+          <button onclick="handleJoinFamily()" style="background:#10b981;">🔗 Kodni kiritib qo'shilish</button>
+        </div>
+
+        <div id="hasFamilyBlock" style="display:none;">
+          <div style="background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 16px; padding: 20px; margin-bottom: 16px;">
+            <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 6px;">Sizning oila kodingiz:</div>
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap: wrap;">
+              <span id="familyCodeDisplay" style="font-size: 26px; font-weight: 800; color: var(--primary-color); letter-spacing: 1px;">—</span>
+              <button onclick="copyFamilyCode()" style="width:auto; padding:8px 16px; font-size:13px;">📋 Nusxalash</button>
+            </div>
+            <div style="font-size: 13px; color: var(--text-muted); margin-top: 10px;">
+              Boshqa oila a'zolari shu kodni "Sozlamalar" bo'limidagi kiritish maydoniga yozib, ma'lumotlaringizga qo'shilishi mumkin.
+            </div>
+          </div>
+          <button onclick="handleLeaveFamily()" style="background:#ef4444;">🚪 Oiladan chiqish (bu qurilmada)</button>
+        </div>
+      </div>
+
+      <div class="panel">
         <h2>🏠 Oila ma'lumotlari</h2>
         <input id="family" placeholder="Oila nomi / Familiyasi" />
         <input id="owner" placeholder="Oila boshlig'i (Admin) ismi" />
@@ -156,6 +183,10 @@ document.addEventListener("DOMContentLoaded", function(){
       </div>
     </div>
 
+    <!-- Firebase (oila bo'lib sinxron ishlash uchun) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
     <script src="app.js"></script>
     <script>
       function saveSettings() {
@@ -166,10 +197,7 @@ document.addEventListener("DOMContentLoaded", function(){
           currency: document.getElementById("currency").value,
         };
 
-        localStorage.setItem(
-          "settings",
-          JSON.stringify(settings),
-        );
+        cloudSave("settings", settings);
 
         alert("Sozlamalar muvaffaqiyatli saqlandi!");
         location.reload();
@@ -184,6 +212,55 @@ document.addEventListener("DOMContentLoaded", function(){
         }
       }
 
+      function renderFamilyPanel() {
+        let code = getFamilyCode();
+        let noFamilyBlock = document.getElementById("noFamilyBlock");
+        let hasFamilyBlock = document.getElementById("hasFamilyBlock");
+
+        if (code) {
+          noFamilyBlock.style.display = "none";
+          hasFamilyBlock.style.display = "block";
+          document.getElementById("familyCodeDisplay").innerText = code;
+        } else {
+          noFamilyBlock.style.display = "block";
+          hasFamilyBlock.style.display = "none";
+        }
+      }
+
+      async function handleCreateFamily() {
+        let code = await createFamily();
+        if (code) {
+          alert("Oila muvaffaqiyatli yaratildi! Kodingiz: " + code + "\n\nBu kodni oila a'zolaringizga bering.");
+          renderFamilyPanel();
+        }
+      }
+
+      async function handleJoinFamily() {
+        let code = document.getElementById("joinCodeInput").value;
+        let ok = await joinFamily(code);
+        if (ok) {
+          alert("Muvaffaqiyatli qo'shildingiz! Sahifa yangilanmoqda...");
+          location.reload();
+        }
+      }
+
+      function handleLeaveFamily() {
+        if (confirm("Rostdan ham oiladan chiqmoqchimisiz? Bu qurilma endi boshqalar bilan sinxron ishlamaydi.")) {
+          leaveFamily();
+          renderFamilyPanel();
+        }
+      }
+
+      function copyFamilyCode() {
+        let code = getFamilyCode();
+        if (!code) return;
+        navigator.clipboard.writeText(code).then(() => {
+          alert("Kod nusxalandi: " + code);
+        }).catch(() => {
+          alert("Kod: " + code);
+        });
+      }
+
       // Load saved settings in inputs
       document.addEventListener("DOMContentLoaded", () => {
         let settings = JSON.parse(localStorage.getItem("settings"));
@@ -193,6 +270,7 @@ document.addEventListener("DOMContentLoaded", function(){
           document.getElementById("phone").value = settings.phone || "";
           document.getElementById("currency").value = settings.currency || "UZS";
         }
+        renderFamilyPanel();
       });
     </script>
   </body>

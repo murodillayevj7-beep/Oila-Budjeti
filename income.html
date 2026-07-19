@@ -186,9 +186,13 @@ placeholder="Summa">
 
 </div>
 
-<script src="app.js"></script>
+<!-- Firebase (oila bo'lib sinxron ishlash uchun) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
 <script>
-let incomes = JSON.parse(localStorage.getItem("incomeData")) || [];
+let incomes = cloudGetArray("incomeData");
 
 function addIncome(){
 let name = document.getElementById("incomeName").value;
@@ -207,7 +211,7 @@ incomes.push({
   date: new Date().toLocaleDateString()
 });
 
-localStorage.setItem("incomeData", JSON.stringify(incomes));
+cloudSave("incomeData", incomes);
 
 showIncome();
 document.getElementById("incomeName").value="";
@@ -217,7 +221,7 @@ document.getElementById("incomeAmount").value="";
 function deleteIncome(index){
   if(confirm("Ushbu daromad yozuvini o'chirasizmi?")){
     incomes.splice(index, 1);
-    localStorage.setItem("incomeData", JSON.stringify(incomes));
+    cloudSave("incomeData", incomes);
     showIncome();
   }
 }
@@ -257,6 +261,7 @@ document.getElementById("todayIncome").innerHTML = todayTotal.toLocaleString()+"
 }
 
 showIncome();
+subscribeCloud("incomeData", showIncome);
 </script>
 </body>
 </html>
