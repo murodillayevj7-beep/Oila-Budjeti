@@ -648,8 +648,13 @@ tbody tr td:nth-child(2) {
     border-radius: 12px;
   }
 
-  .sidebar ul li a span {
+  .sidebar ul li a span.nav-text {
     display: none;
+  }
+
+  .sidebar ul li a span.nav-icon {
+    display: inline-block;
+    font-size: 22px;
   }
 
   .sidebar li.active::before {
